@@ -28,3 +28,21 @@ If you wish to change this, change
 path_to_files = 'Data/'
 ```
 at the top of ```File_Combiner.py``` to the path of where the data files are stored
+
+## Output format
+
+The default is to output into a csv format. 
+You can then save this as an excel (xlsx) or anything you want.
+If you do this, Excel will automatically detect the time and date and format the cells accordingly 
+(no need to do the process listed below)
+
+If you want to save directly as an excel you can uncomment lines 111-114
+```python
+    dataframe['time'] = pd.to_datetime(dataframe['time'], format="%H:%M")
+    dataframe['date'] = pd.to_datetime(dataframe['date'], format="%m/%d")
+
+    dataframe.to_excel(path_to_files + '/results/' + organism + '.xlsx')  # save as Excel
+```
+
+The time and date columns in the resulting .xlsx file will be just a sequence of '#' symbols.
+You will need to select these columns, right click, format, then time/date in order for them to be human-legible.
