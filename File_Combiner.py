@@ -24,6 +24,8 @@ def parse_filename(name):
 
     return info
 
+
+# Maps the flattened index to Letter Number (F10) to match output from absorbance reader
 def map_indx_to_coord(indx):
     rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
     cols = [str(i + 1) for i in range(12)]
@@ -34,10 +36,17 @@ def map_indx_to_coord(indx):
     return rows[row] + cols[column]
 
 
+# Reads the raw data from the excel file
+# Assumes matrix data is in C25-N32 in excel
+# Prefix is Prepended onto each label in dictionary
 def read_file(file, prefx):
     df = pd.read_excel(file, header=23, engine='openpyxl')
     raw = df.to_numpy()
     data = np.delete(raw, [-1, 0,1], 1)
+    # remove -1, removes the last value (590) which is the wavelength
+    # remove 0 removes blank column
+    # remove 1 removes row labels A-H
+
     # Shape of data should be (9, 12). 9 row by 12 col
     plates = data.flatten()
 
@@ -48,24 +57,7 @@ def read_file(file, prefx):
     return info
 
 
-# Main function
-# Tells the rest of the program what files to read and combines results
-def read_organism(name):
-    output_f = open(path_to_files + 'results_' + name + '.csv', 'a')
-    for day in range(1, 30):
-        file_a = path_to_files + name + '-' + str(day) + '-A.xpt'
-        file_b = path_to_files + name + '-' + str(day) + '-B.xpt'
-        data = combine_plates(file_a, file_b)
-
-        sb = ''
-        for x in data:  # turns numpy array into csv string
-            sb += str(x) + ','
-        sb = sb[:-1]  # remove final comma
-        output_f.write(sb + '\n')
-    output_f.close()
-
-
-
+# Reads and parses all the filenames within a directory
 def get_all_info(path):
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]  # stole from internet. Gets all the filenames within a folder
     # https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
@@ -75,7 +67,8 @@ def get_all_info(path):
     return all_info
 
 
-
+# Combines all the files for the given organism
+# Expects the relevant files to be under path_to_files in a folder labeled with organism name
 def main(organism):
     path = path_to_files + organism + '/'
     all_info = get_all_info(path)
@@ -84,7 +77,9 @@ def main(organism):
 
     dataframe = []
 
-    for day in dates:
+    for day in dates:  # iterate through each date
+
+        # find the 2 different plate types for the date
         p1, p2 = None, None
 
         for d in all_info:
@@ -93,12 +88,13 @@ def main(organism):
             elif d['date'] == day and d['plate'] == 'PM2A':
                 p2 = d
 
-
         # now we need to merge p1, p2
         data1 = read_file(path + p1['filename'], 'PM1 ')
         data2 = read_file(path + p2['filename'], 'PM2A ')
 
-        day_info = {**p1, **data1, **data2}
+        day_info = {**p1, **data1, **data2}  # Merge the dictionaries returned
+        # p1 gives info on time, date, organism, etc
+        # data1/2 give the relevent cells from the matrix in each file
         day_info.pop('filename')  # just removes filename from the dictionary
 
         dataframe.append(day_info)
@@ -118,6 +114,6 @@ def main(organism):
     # dataframe.to_excel(path_to_files + '/results/' + organism + '.xlsx')  # save as Excel
 
 
+'''  CHANGE DOWN HERE!! '''
 
-
-main('CG23.4 PM Plates')
+main('YOUR ORGANISM')
