@@ -88,10 +88,15 @@ def main(organism):
             elif d['date'] == day and d['plate'] == 'PM2A':
                 p2 = d
 
+        # Check for missing days
+        if p1 is None or p2 is None:  # if missing a datapoint, skip it
+            continue
+
         # now we need to merge p1, p2
         data1 = read_file(path + p1['filename'], 'PM1 ')
         data2 = read_file(path + p2['filename'], 'PM2A ')
 
+        # day_info = {**p2, **data2}  # For running with only half data (no PM1 plate)
         day_info = {**p1, **data1, **data2}  # Merge the dictionaries returned
         # p1 gives info on time, date, organism, etc
         # data1/2 give the relevent cells from the matrix in each file
@@ -108,12 +113,12 @@ def main(organism):
     '''
 
     # Set the format to date/time for excel
-    # dataframe['time'] = pd.to_datetime(dataframe['time'], format="%H:%M")
-    # dataframe['date'] = pd.to_datetime(dataframe['date'], format="%m/%d")
+    dataframe['time'] = pd.to_datetime(dataframe['time'], format="%H:%M")
+    dataframe['date'] = pd.to_datetime(dataframe['date'], format="%m/%d")
 
-    # dataframe.to_excel(path_to_files + '/results/' + organism + '.xlsx')  # save as Excel
+    dataframe.to_excel(path_to_files + '/results/' + organism + '.xlsx')  # save as Excel
 
 
 '''  CHANGE DOWN HERE!! '''
 
-main('YOUR ORGANISM')
+main('PL20H PM Plate')
