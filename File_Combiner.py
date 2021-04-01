@@ -30,8 +30,13 @@ def map_indx_to_coord(indx):
     rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
     cols = [str(i + 1) for i in range(12)]
 
-    row = math.floor(indx/len(cols))
-    column = indx % len(cols)
+    # row = math.floor(indx/len(cols))
+    # column = indx % len(cols)
+    #
+    # return rows[row] + cols[column]
+
+    row = len(rows) - 1 - math.floor(indx/len(cols))
+    column = len(cols) - 1 - (indx % len(cols))
 
     return rows[row] + cols[column]
 
@@ -121,4 +126,6 @@ def main(organism):
 
 '''  CHANGE DOWN HERE!! '''
 
-main('PL20H PM Plate')
+# print(map_indx_to_coord(95))
+# exit(13)
+main('PL19 PM Plates')
