@@ -1,0 +1,135 @@
+---
+title: "Correcting EEMs and Identification of Peaks and Indices"
+author: "Madelyne Willis"
+date: "8/6/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This analysis pipeline corrects EEM scans collected with the Horiba F4 in the Foreman lab. This pipeline starts with instrument-specific spectral corrected data automatically acquired during the scan (S1c/R1c). 
+
+This pipeline was adapted from the staRdom PARAFAC protocol described by Matthias Pucher:
+
+https://cran.r-project.org/web/packages/staRdom/vignettes/PARAFAC_analysis_of_EEM.html#spectral-correction
+
+Before starting, make sure all EEM files and UV/vis files are in separate folders and have the same names (ex: Sample1.dat for EEMs and Sample1.csv for Absorbance). Make sure the blank has 'blank', 'nano', 'milliq', or 'mq' in the name and that these words are not part of the sample names. 
+
+```{r}
+##Load the required R packages:
+library("staRdom")
+cores <- detectCores(logical = FALSE) #This lines selects the appropriate # of cores to use to minimize the amount of computing time. 
+
+library(ggplot2)
+library(plotly)
+library(plot3D)
+library(writexl)
+```
+
+##Preprocessing EEMs data
+
+Import raw data, check for incompatibilities with data format, and view uncorrected EEMs. The eem_overview_plot function displays all EEMs in the folder on the same scale. 
+
+```{r}
+# Find folder with all the raw EEMs and EEM blanks and name it as an object called "folder"
+folder <- "./EEMS_proj20220309/data/"
+# Read in the raw EEMs data into an object called "eem_list"
+eem_list <- eem_read(folder, recursive = TRUE, import_function = "fluoromax4")
+
+# Do the same for the UV/vis data
+absorbance_path = "./UV_Vis/" 
+absorbance <- absorbance_read(absorbance_path, cores = cores)
+
+# The eem_checkdata function looks for abnormalities in the data format. This step can be used at any point in the data processing pipeline.
+problem <- eem_checkdata(eem_list,absorbance,error=FALSE)
+
+eem_overview_plot(eem_list, spp=12, contour = FALSE)#spp parameter designates number of EEMs per plot and contour=TRUE shows contour lines.
+```
+
+Baseline correct absorbance (UV/vis) data by subtracting the mean of the absorbance at high wavelengths. Pucher suggests using the spectrum between 680 and 700 nm. Then subtract the fluorescence in the water blank from the sample data. 
+
+```{r}
+#Baseline correction on UV/vis data. 
+absorbance <- abs_blcor(absorbance,wlrange = c(680,700))
+
+#Blank subtraction. 
+eem_list <- eem_remove_blank(eem_list) # eem_remove_blank takes the average fluorescence of whatever blank files are present in your EEMs folder then subtracts these values from your sample data. 
+
+#View eems after blank subtraction
+eem_overview_plot(eem_list, spp=12, contour = FALSE)
+```
+
+Correct data for the inner filter effect and normalize data to Raman units by dividing all intensities by the area of the Raman peak in the water blank. You could also use the Raman scan collected at the beginning of the scan. Normalization allows data to be compared across different days, fluorometers, and studies. 
+
+```{r}
+eem_list <- eem_ife_correction(eem_list,absorbance, cuvl = 1) # cuvl is the pathlength of the cuvettes (in cm) used for UV/vis scans. 
+
+eem_list <- eem_raman_normalisation2(eem_list, blank = "blank")
+
+eem_overview_plot(eem_list, spp=12, contour = FALSE)
+```
+
+Last step in preprocessing is to remove the Raman and Rayleigh scatter lines. 
+
+```{r}
+# First, remove the blank scan from the 'eem_list' object
+eem_list <- eem_extract(eem_list, c("nano", "miliq", "milliq", "mq", "blank"),ignore_case = TRUE)
+
+# Remove scatter 
+remove_scatter <- c(TRUE, TRUE, TRUE, TRUE)
+remove_scatter_width <- c(15,15,15,15)
+eem_list <- eem_rem_scat(eem_list, remove_scatter = remove_scatter, remove_scatter_width = remove_scatter_width)
+
+#interpolate data to fill in the missing values leftover after scatter removal. Type 1 uses spline interpolation. For other options see the staRdom protocol. 
+eem_list <- eem_interp(eem_list, cores = cores, type = 1, extend = FALSE)
+
+eem_overview_plot(eem_list, spp=12, contour = TRUE)
+```
+
+##Identifying Peaks and Indices
+
+EEMs should be corrected at this point! Now we can ID peaks, indices, or move on to PARAFAC.
+
+Identifying peaks and indices:
+
+```{r}
+# staRdom author suggests smoothing data for peak finding but NOT for PARAFAC modeling:
+eem4peaks <- eem_smooth(eem_list, n = 4, cores = cores) # the n parameter designates the moving average window size in nm. A larger n value means more smoothing. 
+
+# Peaks can be picked and known indices from the literature extracted from each EEM:
+bix <- eem_biological_index(eem4peaks)
+coble_peaks <- eem_coble_peaks(eem4peaks)
+fi <- eem_fluorescence_index(eem4peaks)
+hix <- eem_humification_index(eem4peaks, scale = TRUE)
+
+indices_peaks <- cbind(bix, coble_peaks, fi, hix) #combine all the data into one table
+
+# If you want to output your data into an excel spreadsheet:
+write_xlsx(indices_peaks, 'PATH TO THE FOLDER YOU WANT YOUR DATA SAVED TO')
+```
+
+The staRdom package has options for plotting but the aesthetics are poor. Instead, you can create individual plots of your EEMS using the plot3D package:
+
+```{r}
+# First, select the sample you want to plot and name it 'eem'. The number in brackets corresponds to the number of the sample in the eem_list object. 
+eem <- ggeem(eem_list[[1]], fill_max = FALSE, eemlist_order = TRUE, contour = TRUE)
+eem
+
+##Convert the EEM to a dataframe:
+eem_data <- as.data.frame(eem[[1]]) # you can double check which sample you selected from the list by double clicking on the eem_data object and seeing what is listed in the 'sample' column. 
+
+##Then convert dataframe to matrix:
+eem_mat <- matrix(eem_data[,3],nrow=22,ncol=131,byrow=TRUE)
+
+##Plot EEM with contour lines:
+image2D(t(eem_mat), contour = list(col = "black", labcex = 1, lwd = 1, alpha = .6, drawlabels = FALSE, nlevels = 12), resfac = 6, xlab = "Emission (nm)", ylab = "Excitation (nm)", main = eem_data[1, 4], x = seq(300, 560, length.out = nrow(t(eem_mat))), y = seq(240, 450, length.out = ncol(t(eem_mat))))
+
+```
+
+
+
+
