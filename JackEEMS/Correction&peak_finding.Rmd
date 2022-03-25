@@ -22,7 +22,7 @@ Before starting, make sure all EEM files and UV/vis files are in separate folder
 ```{r}
 ##Load the required R packages:
 library("staRdom")
-cores <- detectCores(logical = FALSE) #This lines selects the appropriate # of cores to use to minimize the amount of computing time. 
+cores <- detectCores(logical = FALSE) #Thislines selects the appropriate # of cores to use to minimize the amount of computing time. 
 
 library(ggplot2)
 library(plotly)
@@ -36,7 +36,7 @@ Import raw data, check for incompatibilities with data format, and view uncorrec
 
 ```{r}
 # Find folder with all the raw EEMs and EEM blanks and name it as an object called "folder"
-folder <- "./EEMS_proj20220309/data/"
+folder <- "./EEMS_proj20220309/Graphs_34/"
 # Read in the raw EEMs data into an object called "eem_list"
 eem_list <- eem_read(folder, recursive = TRUE, import_function = "fluoromax4")
 
@@ -109,14 +109,14 @@ hix <- eem_humification_index(eem4peaks, scale = TRUE)
 indices_peaks <- cbind(bix, coble_peaks, fi, hix) #combine all the data into one table
 
 # If you want to output your data into an excel spreadsheet:
-write_xlsx(indices_peaks, 'PATH TO THE FOLDER YOU WANT YOUR DATA SAVED TO')
+write_xlsx(indices_peaks, './Results/thing.xlsx')
 ```
 
 The staRdom package has options for plotting but the aesthetics are poor. Instead, you can create individual plots of your EEMS using the plot3D package:
 
 ```{r}
 # First, select the sample you want to plot and name it 'eem'. The number in brackets corresponds to the number of the sample in the eem_list object. 
-eem <- ggeem(eem_list[[1]], fill_max = FALSE, eemlist_order = TRUE, contour = TRUE)
+eem <- ggeem(eem_list[[2]], fill_max = FALSE, eemlist_order = TRUE, contour = TRUE)
 eem
 
 ##Convert the EEM to a dataframe:
