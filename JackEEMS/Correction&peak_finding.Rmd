@@ -36,12 +36,17 @@ Import raw data, check for incompatibilities with data format, and view uncorrec
 
 ```{r}
 # Find folder with all the raw EEMs and EEM blanks and name it as an object called "folder"
-folder <- "./EEMS_proj20220309/Graphs_34/"
+
+#folder <- "./EEMS_proj20220309/Graphs_34/"
+#absorbance_path = "./UV_Vis/" 
+absorbance_path = "./Worked_UV_Vis/" 
+folder <- "./Worked_EEMS/"
+
 # Read in the raw EEMs data into an object called "eem_list"
 eem_list <- eem_read(folder, recursive = TRUE, import_function = "fluoromax4")
 
 # Do the same for the UV/vis data
-absorbance_path = "./UV_Vis/" 
+
 absorbance <- absorbance_read(absorbance_path, cores = cores)
 
 # The eem_checkdata function looks for abnormalities in the data format. This step can be used at any point in the data processing pipeline.
@@ -109,7 +114,7 @@ hix <- eem_humification_index(eem4peaks, scale = TRUE)
 indices_peaks <- cbind(bix, coble_peaks, fi, hix) #combine all the data into one table
 
 # If you want to output your data into an excel spreadsheet:
-write_xlsx(indices_peaks, './Results/thing.xlsx')
+write_xlsx(indices_peaks, './Results/water.xlsx')
 ```
 
 The staRdom package has options for plotting but the aesthetics are poor. Instead, you can create individual plots of your EEMS using the plot3D package:
