@@ -131,5 +131,30 @@ image2D(t(eem_mat), contour = list(col = "black", labcex = 1, lwd = 1, alpha = .
 ```
 
 
+```{r fig.width=9, fig.height=7.5}
+# First, select the sample you want to plot and name it 'eem'. The number in brackets corresponds to the number of the sample in the eem_list object. 
+par(mfrow = c(2, 2))
+par(oma = c(4, 4, 2, 2)) # make room (i.e. the 4's) for the overall x and y axis titles (x,y,z,b) x=bottom margin, y= left margin, z=top, b = right)
+#par(mar = c(2, 2, 2, 2)) # make the plots be closer together
+
+
+for (i in 1:4) {
+eem <- ggeem(eem_list[[i]], fill_max = FALSE, eemlist_order = TRUE, contour = TRUE)
+
+##Convert the EEM to a dataframe:
+eem_data <- as.data.frame(eem[[1]]) # you can double check which sample you selected from the list by double clicking on the eem_data object and seeing what is listed in the 'sample' column. 
+
+##Then convert dataframe to matrix:
+eem_mat <- matrix(eem_data[,3],nrow=22,ncol=131,byrow=TRUE)
+
+##Plot EEM with contour lines:
+image2D(t(eem_mat), contour = list(col = "black", labcex = 1, lwd = 1, alpha = .6, drawlabels = FALSE, nlevels = 12), resfac = 6, xlab = "", ylab = "", main = eem_data[1, 4], x = seq(300, 560, length.out = nrow(t(eem_mat))), y = seq(240, 450, length.out = ncol(t(eem_mat))))
+}
+mtext('Emission (nm)', side = 1, outer = TRUE, line = 0)
+mtext('Excitation (nm)', side = 2, outer = TRUE, line = 1)
+
+```
+
+
 
 
